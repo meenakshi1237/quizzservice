@@ -1,0 +1,84 @@
+spring:
+  application:
+    name: quiz-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/quizdb
+
+    username: postgres
+    password: root
+
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+server:
+  port: 8085
+
+eureka:
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+#  servlet:
+#    context-path: /api
+#
+#
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      QUESTION-SERVICE:  # Define a circuit breaker instance for a service
+        slidingWindowSize: 6                    # Number of calls to consider for metrics
+        slidingWindowType: COUNT_BASED            # Type of sliding window (COUNT_BASED or TIME_BASED)
+        failureRateThreshold: 50                  # Percentage of failures to trigger the breaker
+#        slowCallRateThreshold: 100                # Percentage of slow calls to trigger the breaker
+#        slowCallDurationThreshold: 2s             # Time limit for a call to be considered slow
+        permittedNumberOfCallsInHalfOpenState: 3 # Number of test calls allowed in half-open state
+        waitDurationInOpenState: 10s              # Time to wait before moving from open to half-open state
+        minimumNumberOfCalls: 10                  # Minimum number of calls before calculating the failure rate
+        automaticTransitionFromOpenToHalfOpenEnabled: true  # Auto-transition from open to half-open
+        registerHealthIndicator: true
+#        recordExceptions:
+#          - java.io.IOException                   # List of exceptions to record as failures
+#          - java.util.concurrent.TimeoutException
+#        ignoreExceptions:
+#          - com.example.CustomException           # List of exceptions to ignore as failures
+
+
+
+#configurations for retry mechanism
+
+  retry:
+    instances:
+      QUESTION-SERVICE:
+        max-attempts: 10  # Number of retry attempts
+        wait-duration: 10s  # Time to wait between retries
+
+
+
+#configuration for rate limiter
+  ratelimiter:
+    instances:
+      QUESTION-SERVICE:
+        registerHealthIndicator: false
+        limitForPeriod: 3
+        limitRefreshPeriod: 60s
+        timeoutDuration: 10s

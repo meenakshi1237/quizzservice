@@ -1,0 +1,118 @@
+volumes:
+  postgres-data:
+
+services:
+  #service-registry
+  service-registry:
+    image: serviceregistry
+    container_name: serviceregistryapp
+    ports:
+      - "8761:8761"
+    build:
+      context: C:\Users\meena\OneDrive\Desktop\microservices_FF\eureka-service-registry
+      dockerfile: Dockerfile
+
+
+
+  #mysql service for customer
+  postgres:
+    image: 'postgres'
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    volumes:
+      - postgres-data:/data/db
+    ports:
+      - "5432:5432"
+#      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+#  question-db:
+#    image: postgres:latest
+#    container_name: questiondb-container
+#    environment:
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: root
+#      POSTGRES_DB: questiondbdocker
+#    volumes:
+#      - quiz-appdb-data:/var/lib/postgresql/data
+##      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+#    ports:
+#      - "5432:5432"
+
+  #for Mongo DB
+#  fraud-mongo:
+#    image: mongo:6.0
+#    container_name: fraud_mongo
+#    environment:
+#      MONGO_INITDB_DATABASE: fraud_db
+#    volumes:
+#      - fraud-mongo-data:/data/db
+#    ports:
+#      - "27017:27017"
+
+
+
+      #API Gateway
+  api-gateway:
+    image: apigateway
+    container_name: apigatewaycontainer
+    ports:
+      - "8093:8093"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://serviceregistryapp:8761/eureka/
+    depends_on:
+      - service-registry
+    build:
+      context: C:\Users\meena\OneDrive\Desktop\microservices_FF\quizz-apigetway-routing
+      dockerfile: Dockerfile
+
+
+    #customer-service
+  quizz-service:
+    image: quiz-service
+    container_name: quizservicecontainer
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/quizdb
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://serviceregistryapp:8761/eureka/
+    ports:
+      - "8085:8085"
+    depends_on:
+      - service-registry
+      - postgres
+    build:
+      context: .
+#      . indicates current folder
+      dockerfile: Dockerfile
+
+  #fraudcheck service
+  question-service:
+    image: question-service
+    container_name: questionservicecontainer
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/questiondb
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://serviceregistryapp:8761/eureka/
+    depends_on:
+      - service-registry
+      - postgres
+    build:
+      context: C:\Users\meena\OneDrive\Desktop\microservices_FF\question-service
+      dockerfile: Dockerfile
+
+
+  #notification-service
+#  notification-service:
+#    image: notificationservice
+#    container_name: notificationapp
+#    environment:
+#      #EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://serviceregistryapp:8761/eureka/
+#      SPRING_PROFILES_ACTIVE: docker
+#    ports:
+#      - "8083:8083"
+#    depends_on:
+#      - service-registry
+#    build:
+#      context: ./notificatioon
+#      dockerfile: Dockerfile
